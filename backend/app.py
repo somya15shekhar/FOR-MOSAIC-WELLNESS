@@ -24,6 +24,10 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production')
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
+# Cross-domain cookie settings (needed when frontend and backend are on different domains)
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True
+
 # Enable CORS for frontend communication
 CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:5173,http://localhost:3000').split(',')
 CORS(app, supports_credentials=True, origins=CORS_ORIGINS)
