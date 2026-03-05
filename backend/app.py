@@ -476,6 +476,10 @@ def run_audit(invoice_data):
     }
 
 # Routes
+@app.route('/', methods=['GET'])
+def index():
+    return jsonify({'service': 'AI Invoice Auditor API', 'status': 'running', 'docs': '/api/health'})
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})

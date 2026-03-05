@@ -5,4 +5,4 @@ pdfplumber
 pandas
 python-dotenv
 requests
-gunicorn
+gunicorn==23.0.0
