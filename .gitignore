@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# Environment variables (IMPORTANT: keeps your API keys secret)
+.env
+backend/.env
+
+# Build output
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploads folder (user data)
+backend/uploads/
+
+# Logs
+*.log
