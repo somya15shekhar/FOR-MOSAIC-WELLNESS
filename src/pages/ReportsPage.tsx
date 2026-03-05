@@ -8,7 +8,6 @@ import {
   ChevronRight,
   ChevronDown,
   RefreshCw,
-  AlertCircle,
   Info
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
