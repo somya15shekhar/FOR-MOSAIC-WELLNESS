@@ -26,7 +26,7 @@ export default function LoginPage() {
     if (success) {
       navigate('/dashboard');
     }
-    
+
     setIsLoading(false);
   };
 
@@ -143,8 +143,17 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Demo Note */}
+          <div className="mt-6 p-3 bg-[rgba(47,142,146,0.06)] border border-[rgba(47,142,146,0.15)] rounded-lg">
+            <p className="text-xs text-[#2F8E92] text-center leading-relaxed">
+              <span className="font-semibold">Note:</span> This prototype is built for{' '}
+              <span className="font-semibold">Mosaic Wellness</span>. Please use the demo
+              credentials buttons below to sign in.
+            </p>
+          </div>
+
           {/* Demo Credentials */}
-          <div className="mt-8 pt-6 border-t border-[rgba(11,13,16,0.08)]">
+          <div className="mt-4 pt-6 border-t border-[rgba(11,13,16,0.08)]">
             <p className="text-xs text-[#6B7280] text-center mb-3">Demo Credentials</p>
             <div className="flex gap-2">
               <button
