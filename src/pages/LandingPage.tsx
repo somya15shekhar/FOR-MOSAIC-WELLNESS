@@ -2,11 +2,11 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { 
-  Upload, 
-  Search, 
-  CheckCircle, 
-  Shield, 
+import {
+  Upload,
+  Search,
+  CheckCircle,
+  Shield,
   ArrowRight,
   Receipt,
   FileText,
@@ -42,7 +42,7 @@ export default function LandingPage() {
         duration: 0.6,
         ease: 'power2.out',
       });
-      
+
       gsap.from('.hero-title', {
         y: 30,
         opacity: 0,
@@ -50,7 +50,7 @@ export default function LandingPage() {
         delay: 0.2,
         ease: 'power2.out',
       });
-      
+
       gsap.from('.hero-subtitle', {
         y: 20,
         opacity: 0,
@@ -58,7 +58,7 @@ export default function LandingPage() {
         delay: 0.4,
         ease: 'power2.out',
       });
-      
+
       gsap.from('.hero-cta', {
         y: 20,
         opacity: 0,
@@ -66,7 +66,7 @@ export default function LandingPage() {
         delay: 0.6,
         ease: 'power2.out',
       });
-      
+
       gsap.from('.hero-card', {
         x: 100,
         opacity: 0,
@@ -124,14 +124,14 @@ export default function LandingPage() {
             </div>
             <span className="font-display font-semibold text-xl text-[#0B0D10]">InvoiceAI</span>
           </div>
-          
+
           <div className="hidden md:flex items-center gap-8">
             <button onClick={() => scrollToSection(featuresRef)} className="text-sm text-[#6B7280] hover:text-[#0B0D10] transition-colors">Product</button>
-            <button onClick={() => scrollToSection(howItWorksRef)} className="text-sm text-[#6B7280] hover:text-[#0B0D10] transition-colors">Solutions</button>
-            <button onClick={() => scrollToSection(pricingRef)} className="text-sm text-[#6B7280] hover:text-[#0B0D10] transition-colors">Pricing</button>
+            <button onClick={() => scrollToSection(howItWorksRef)} className="text-sm text-[#6B7280] hover:text-[#0B0D10] transition-colors">How it works</button>
+            <button onClick={() => scrollToSection(pricingRef)} className="text-sm text-[#6B7280] hover:text-[#0B0D10] transition-colors">Demo</button>
             <button onClick={() => scrollToSection(securityRef)} className="text-sm text-[#6B7280] hover:text-[#0B0D10] transition-colors">Security</button>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <Button variant="ghost" onClick={() => navigate('/login')} className="hidden sm:inline-flex">
               Sign in
@@ -151,20 +151,20 @@ export default function LandingPage() {
             <div className="max-w-xl">
               <p className="hero-label text-micro text-[#2F8E92] mb-4">AI INVOICE AUDIT</p>
               <h1 className="hero-title text-5xl lg:text-6xl font-display font-semibold text-[#0B0D10] leading-tight mb-6">
-                Catch overcharges before you pay.
+                AI that audits vendor invoices and catches overcharges before payment.
               </h1>
               <p className="hero-subtitle text-lg text-[#6B7280] mb-8">
-                Upload invoices. Our AI reads, compares, and flags discrepancies—in seconds.
+                Upload any invoice (PDF, image, or scan). Our AI extracts invoice data, verifies rates against contracts, detects GST errors, and flags discrepancies instantly.
               </p>
               <div className="hero-cta flex flex-wrap gap-4">
-                <Button 
+                <Button
                   onClick={() => navigate('/login')}
                   className="bg-[#2F8E92] hover:bg-[#3BA3A7] px-6 py-3 h-auto text-base gap-2"
                 >
-                  Start free trial
+                  Audit an invoice
                   <ArrowRight className="w-4 h-4" />
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => scrollToSection(howItWorksRef)}
                   className="px-6 py-3 h-auto text-base"
@@ -173,38 +173,41 @@ export default function LandingPage() {
                 </Button>
               </div>
             </div>
-            
+
             {/* Right Content - Hero Card */}
             <div className="hero-card relative">
               <Card className="shadow-2xl border-0">
                 <CardContent className="p-8">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="font-display font-semibold text-lg">Invoice Audit Summary</h3>
-                    <span className="badge badge-accent">Live</span>
+                    <span className="badge badge-accent">AI Audit Result</span>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="flex justify-between items-center p-4 bg-[rgba(11,13,16,0.02)] rounded-xl">
                       <span className="text-[#6B7280]">Billed</span>
-                      <span className="font-semibold text-[#0B0D10]">$12,400</span>
+                      <span className="font-semibold text-[#0B0D10]">₹12,400</span>
                     </div>
                     <div className="flex justify-between items-center p-4 bg-[rgba(11,13,16,0.02)] rounded-xl">
                       <span className="text-[#6B7280]">Expected</span>
-                      <span className="font-semibold text-[#0B0D10]">$11,020</span>
+                      <span className="font-semibold text-[#0B0D10]">₹11,020</span>
                     </div>
                     <div className="h-px bg-[rgba(11,13,16,0.08)]" />
                     <div className="flex justify-between items-center p-4 bg-[rgba(16,185,129,0.08)] rounded-xl">
                       <span className="text-[#10B981] font-medium">Potential savings</span>
-                      <span className="font-semibold text-[#10B981]">$1,380</span>
+                      <span className="font-semibold text-[#10B981]">₹1,380</span>
                     </div>
                   </div>
-                  
+
                   <p className="text-center text-sm text-[#6B7280] mt-6">
                     11% of annual spend
                   </p>
+                  <p className="text-center text-xs text-[#9CA3AF] mt-2">
+                    OCR + AI powered invoice auditing
+                  </p>
                 </CardContent>
               </Card>
-              
+
               {/* Decorative elements */}
               <div className="absolute -top-4 -right-4 w-24 h-24 bg-[#2F8E92]/10 rounded-full blur-2xl" />
               <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-[#10B981]/10 rounded-full blur-2xl" />
@@ -224,7 +227,7 @@ export default function LandingPage() {
               Drop your invoices. We handle the reading, matching, and math.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
@@ -288,7 +291,7 @@ export default function LandingPage() {
                 ))}
               </ul>
             </div>
-            
+
             <Card className="shadow-2xl border-0">
               <CardContent className="p-6">
                 <h3 className="font-display font-semibold mb-4">Extracted Charges</h3>
@@ -298,11 +301,10 @@ export default function LandingPage() {
                     { desc: 'Handling Fee', qty: 1, rate: 120, total: 120, highlight: true },
                     { desc: 'Fuel Surcharge', qty: 1, rate: 380, total: 380 },
                   ].map((item, index) => (
-                    <div 
-                      key={index} 
-                      className={`flex justify-between items-center p-3 rounded-lg ${
-                        item.highlight ? 'bg-[rgba(47,142,146,0.08)] border-l-4 border-[#2F8E92]' : 'bg-[rgba(11,13,16,0.02)]'
-                      }`}
+                    <div
+                      key={index}
+                      className={`flex justify-between items-center p-3 rounded-lg ${item.highlight ? 'bg-[rgba(47,142,146,0.08)] border-l-4 border-[#2F8E92]' : 'bg-[rgba(11,13,16,0.02)]'
+                        }`}
                     >
                       <div>
                         <p className="font-medium text-sm text-[#0B0D10]">{item.desc}</p>
@@ -327,7 +329,7 @@ export default function LandingPage() {
               See every discrepancy clearly
             </h2>
           </div>
-          
+
           <Card className="shadow-2xl border-0">
             <CardContent className="p-8">
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-[rgba(11,13,16,0.08)]">
@@ -337,7 +339,7 @@ export default function LandingPage() {
                 </div>
                 <span className="badge badge-warning">3 Issues Found</span>
               </div>
-              
+
               <table className="w-full">
                 <thead>
                   <tr className="text-left text-micro text-[#6B7280]">
@@ -368,7 +370,7 @@ export default function LandingPage() {
                   ))}
                 </tbody>
               </table>
-              
+
               <div className="mt-6 pt-4 border-t border-[rgba(11,13,16,0.08)] flex justify-between items-center">
                 <span className="text-[#6B7280]">Total variance:</span>
                 <span className="text-xl font-semibold text-[#EF4444]">$310</span>
@@ -404,7 +406,7 @@ export default function LandingPage() {
                 </div>
               </CardContent>
             </Card>
-            
+
             {/* Savings Card */}
             <Card className="shadow-xl border-0 bg-gradient-to-br from-[#2F8E92] to-[#3BA3A7]">
               <CardContent className="p-8 text-white">
@@ -417,7 +419,7 @@ export default function LandingPage() {
                 <p className="text-white/80 mb-8">
                   11% of annual spend
                 </p>
-                
+
                 <div className="flex gap-4">
                   <div className="flex-1 h-24 bg-white/10 rounded-xl flex items-end justify-center p-4">
                     <div className="w-8 bg-white/30 rounded-t-lg" style={{ height: '40%' }} />
@@ -459,7 +461,7 @@ export default function LandingPage() {
                 ))}
               </div>
             </div>
-            
+
             <Card className="shadow-2xl border-0">
               <CardContent className="p-6">
                 <div className="flex items-center gap-4 mb-6">
@@ -471,7 +473,7 @@ export default function LandingPage() {
                     <span className="badge badge-accent text-xs">Score 94</span>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-[rgba(11,13,16,0.02)] rounded-xl">
                     <p className="text-micro text-[#6B7280] mb-1">Invoices</p>
@@ -496,7 +498,7 @@ export default function LandingPage() {
           <h2 className="text-4xl font-display font-semibold text-[#0B0D10] mb-12">
             Enterprise-grade security by default.
           </h2>
-          
+
           <div className="grid md:grid-cols-2 gap-8">
             {[
               {
@@ -534,7 +536,7 @@ export default function LandingPage() {
               Trusted by finance teams.
             </h2>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
@@ -574,7 +576,7 @@ export default function LandingPage() {
               Start free, scale as you grow.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
@@ -602,8 +604,8 @@ export default function LandingPage() {
                 outline: true,
               },
             ].map((plan, index) => (
-              <Card 
-                key={index} 
+              <Card
+                key={index}
                 className={`pricing-card card-hover border-0 shadow-lg ${plan.popular ? 'ring-2 ring-[#2F8E92]' : ''}`}
               >
                 <CardContent className="p-8">
@@ -627,13 +629,12 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Button 
+                  <Button
                     onClick={() => navigate('/login')}
-                    className={`w-full ${
-                      plan.popular 
-                        ? 'bg-[#2F8E92] hover:bg-[#3BA3A7]' 
+                    className={`w-full ${plan.popular
+                        ? 'bg-[#2F8E92] hover:bg-[#3BA3A7]'
                         : 'bg-white text-[#0B0D10] border border-[rgba(11,13,16,0.12)] hover:bg-[rgba(11,13,16,0.04)]'
-                    }`}
+                      }`}
                   >
                     {plan.cta}
                   </Button>
@@ -654,13 +655,13 @@ export default function LandingPage() {
             Get a demo or start your free trial today.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Button 
+            <Button
               onClick={() => navigate('/login')}
               className="bg-[#2F8E92] hover:bg-[#3BA3A7] px-8 py-3 h-auto text-base"
             >
               Request demo
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={() => navigate('/login')}
               className="border-white/20 text-white hover:bg-white/10 px-8 py-3 h-auto text-base"
@@ -668,7 +669,7 @@ export default function LandingPage() {
               Start free trial
             </Button>
           </div>
-          
+
           <div className="mt-16 pt-8 border-t border-white/10 flex flex-wrap justify-center gap-8">
             {['Privacy', 'Terms', 'Security'].map((item) => (
               <button key={item} className="text-sm text-white/40 hover:text-white transition-colors">
