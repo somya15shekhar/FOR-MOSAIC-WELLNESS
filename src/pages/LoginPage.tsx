@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Redirect if already authenticated
   if (isAuthenticated) {
@@ -18,8 +19,27 @@ export default function LoginPage() {
     return null;
   }
 
+  const DEMO_CREDENTIALS = [
+    { email: 'admin@email.com', password: 'admin123' },
+    { email: 'finance@company.com', password: 'finance123' },
+  ];
+
+  const isDemoCredential = (email: string, password: string) =>
+    DEMO_CREDENTIALS.some(
+      (cred) => cred.email === email.toLowerCase().trim() && cred.password === password
+    );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
+    if (!isDemoCredential(email, password)) {
+      setError(
+        'This prototype is built for Mosaic Wellness. Please use the demo credentials buttons below to sign in.'
+      );
+      return;
+    }
+
     setIsLoading(true);
 
     const success = await login(email, password, rememberMe);
@@ -76,7 +96,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setError(''); }}
                 placeholder="you@company.com"
                 className="input-field"
                 required
@@ -92,7 +112,7 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setError(''); }}
                   placeholder="••••••••"
                   className="input-field pr-10"
                   required
@@ -125,6 +145,15 @@ export default function LoginPage() {
                 Forgot password?
               </button>
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-600 text-center leading-relaxed">
+                  {error}
+                </p>
+              </div>
+            )}
 
             {/* Submit Button */}
             <button
