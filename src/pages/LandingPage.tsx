@@ -308,9 +308,9 @@ export default function LandingPage() {
                     >
                       <div>
                         <p className="font-medium text-sm text-[#0B0D10]">{item.desc}</p>
-                        <p className="text-xs text-[#6B7280]">{item.qty} × ${item.rate}</p>
+                        <p className="text-xs text-[#6B7280]">{item.qty} × ₹{item.rate}</p>
                       </div>
-                      <span className="font-semibold text-[#0B0D10]">${item.total}</span>
+                      <span className="font-semibold text-[#0B0D10]">₹{item.total}</span>
                     </div>
                   ))}
                 </div>
@@ -357,13 +357,13 @@ export default function LandingPage() {
                   ].map((row, index) => (
                     <tr key={index} className="border-t border-[rgba(11,13,16,0.06)]">
                       <td className="py-4 font-medium">{row.item}</td>
-                      <td className="py-4">${row.billed}</td>
-                      <td className="py-4 text-[#6B7280]">${row.expected}</td>
+                      <td className="py-4">₹{row.billed}</td>
+                      <td className="py-4 text-[#6B7280]">₹{row.expected}</td>
                       <td className="py-4">
                         {row.ok ? (
                           <span className="badge badge-success">OK</span>
                         ) : (
-                          <span className="text-[#EF4444] font-medium">+${row.overage}</span>
+                          <span className="text-[#EF4444] font-medium">+₹{row.overage}</span>
                         )}
                       </td>
                     </tr>
@@ -373,7 +373,7 @@ export default function LandingPage() {
 
               <div className="mt-6 pt-4 border-t border-[rgba(11,13,16,0.08)] flex justify-between items-center">
                 <span className="text-[#6B7280]">Total variance:</span>
-                <span className="text-xl font-semibold text-[#EF4444]">$310</span>
+                <span className="text-xl font-semibold text-[#EF4444]">₹310</span>
               </div>
             </CardContent>
           </Card>
@@ -414,7 +414,7 @@ export default function LandingPage() {
                   Total savings
                 </h3>
                 <p className="text-6xl font-display font-bold mb-4">
-                  $1,380
+                  ₹1,380
                 </p>
                 <p className="text-white/80 mb-8">
                   11% of annual spend
@@ -581,7 +581,7 @@ export default function LandingPage() {
             {[
               {
                 name: 'Starter',
-                price: '$0',
+                price: '₹0',
                 period: '/mo',
                 features: ['50 invoices/mo', 'Basic audit rules', 'Email support'],
                 cta: 'Start free',
@@ -589,7 +589,7 @@ export default function LandingPage() {
               },
               {
                 name: 'Growth',
-                price: '$49',
+                price: '₹49',
                 period: '/mo',
                 features: ['500 invoices/mo', 'Advanced rules + exports', 'Priority support'],
                 cta: 'Start free',
@@ -632,8 +632,8 @@ export default function LandingPage() {
                   <Button
                     onClick={() => navigate('/login')}
                     className={`w-full ${plan.popular
-                        ? 'bg-[#2F8E92] hover:bg-[#3BA3A7]'
-                        : 'bg-white text-[#0B0D10] border border-[rgba(11,13,16,0.12)] hover:bg-[rgba(11,13,16,0.04)]'
+                      ? 'bg-[#2F8E92] hover:bg-[#3BA3A7]'
+                      : 'bg-white text-[#0B0D10] border border-[rgba(11,13,16,0.12)] hover:bg-[rgba(11,13,16,0.04)]'
                       }`}
                   >
                     {plan.cta}
