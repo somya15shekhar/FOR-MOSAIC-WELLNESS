@@ -376,10 +376,15 @@ def run_audit(invoice_data):
     # Rule 2: GST Validation
     subtotal = invoice_data.get('subtotal', 0)
     gst_rate = invoice_data.get('gst_rate', 0.18)
-    gst_amount = invoice_data.get('gst_amount', 0)
-    expected_gst = subtotal * gst_rate
+    gst_rate = invoice_data.get('gst_rate', 0.18)
+
+# normalize percentage if parsed as 9 instead of 0.09
+    if gst_rate > 1:
+        gst_rate = gst_rate / 100
+        gst_amount = invoice_data.get('gst_amount', 0)
+        expected_gst = subtotal * gst_rate
     
-    if abs(gst_amount - expected_gst) / expected_gst > 0.02:  # 2% variance
+    if expected_gst > 0 and abs(gst_amount - expected_gst) / expected_gst > 0.02:  # 2% variance
         gst_error = gst_amount - expected_gst
         explanation = generate_explanation('GST_ERROR', {
             'gst_amount': gst_amount,
