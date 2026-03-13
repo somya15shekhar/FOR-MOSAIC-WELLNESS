@@ -141,18 +141,22 @@ Required JSON format:
     }}
   ],
   "subtotal": number (taxable value BEFORE taxes, i.e. sum of line item totals, NOT including GST),
-  "gst_rate": number (percentage value, e.g. 18 for 18%, 5 for 5%, 12 for 12%, 28 for 28%),
-  "gst_amount": number (the actual GST tax amount charged on the invoice),
+  "gst_rate": number (TOTAL combined GST percentage, e.g. 18 for 18%. If CGST 9% + SGST 9%, return 18),
+  "cgst_amount": number or null (CGST tax amount if listed separately on the invoice),
+  "sgst_amount": number or null (SGST tax amount if listed separately on the invoice),
+  "igst_amount": number or null (IGST tax amount if listed separately on the invoice),
+  "gst_amount": number (TOTAL GST tax amount, i.e. sum of all tax components: CGST + SGST or IGST),
   "total_amount": number (final amount including taxes)
 }}
 
 Rules:
 1. Extract the actual values from the invoice text
-2. If a field is not found, use reasonable defaults
+2. If a field is not found, use null for optional fields and reasonable defaults for required fields
 3. Ensure all numbers are valid numeric values
-4. gst_rate must be a percentage number (e.g. 18, not 0.18)
-5. subtotal must be the taxable base BEFORE any tax is added (sum of line item net amounts)
-6. Return ONLY the JSON object, nothing else"""
+4. gst_rate must be the TOTAL COMBINED GST percentage (e.g. if CGST is 9% and SGST is 9%, gst_rate should be 18)
+5. gst_amount must be the TOTAL tax amount (CGST + SGST, or IGST)
+6. subtotal must be the taxable base BEFORE any tax is added (sum of line item net amounts)
+7. Return ONLY the JSON object, nothing else"""
 
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -210,45 +214,65 @@ def generate_mock_invoice_data():
 def normalize_invoice_data(invoice_data):
     """Normalize and validate invoice data before auditing.
     
-    Ensures:
-    - gst_rate is in decimal format (e.g. 0.18, not 18)
-    - subtotal is the taxable base (sum of line items, not including taxes)
-    - Unrealistic GST rates are flagged and corrected
+    Handles:
+    - CGST + SGST split taxes (combines into total gst_amount)
+    - Derives gst_rate from actual amounts when possible
+    - Ensures subtotal is the taxable base (sum of line items)
+    - Clamps unrealistic GST rates
     """
     VALID_GST_SLABS = [0, 0.05, 0.12, 0.18, 0.28]
     
-    # --- Normalize gst_rate to decimal ---
-    gst_rate = invoice_data.get('gst_rate', 18)
-    
-    # If gst_rate looks like a percentage (> 1), convert to decimal
-    if gst_rate > 1:
-        gst_rate = gst_rate / 100
-    
-    # Defensive: flag and clamp unrealistic rates (> 0.50 i.e. 50%)
-    if gst_rate > 0.50:
-        print(f"WARNING: Unrealistic GST rate detected ({gst_rate * 100:.1f}%). Defaulting to 18%.")
-        gst_rate = 0.18
-    
-    # Snap to nearest valid GST slab if within 2% tolerance
-    for slab in VALID_GST_SLABS:
-        if slab > 0 and abs(gst_rate - slab) / slab <= 0.02:
-            gst_rate = slab
-            break
-    
-    invoice_data['gst_rate'] = gst_rate
-    
-    # --- Normalize subtotal ---
+    # --- Step 1: Normalize subtotal from line items ---
     line_items = invoice_data.get('line_items', [])
     computed_subtotal = sum(item.get('total', 0) for item in line_items)
     subtotal = invoice_data.get('subtotal', 0)
     total_amount = invoice_data.get('total_amount', 0)
     
-    # If subtotal >= total_amount, it likely includes taxes — recompute from line items
+    # Prefer line items sum: if subtotal >= total_amount, includes taxes; or if mismatch
     if computed_subtotal > 0 and (subtotal >= total_amount or subtotal <= 0):
-        invoice_data['subtotal'] = computed_subtotal
-    # If subtotal doesn't match line items total, prefer line items sum
+        subtotal = computed_subtotal
     elif computed_subtotal > 0 and abs(subtotal - computed_subtotal) > 1:
-        invoice_data['subtotal'] = computed_subtotal
+        subtotal = computed_subtotal
+    
+    invoice_data['subtotal'] = subtotal
+    
+    # --- Step 2: Combine CGST + SGST / IGST into total gst_amount ---
+    cgst = invoice_data.get('cgst_amount') or 0
+    sgst = invoice_data.get('sgst_amount') or 0
+    igst = invoice_data.get('igst_amount') or 0
+    gst_amount = invoice_data.get('gst_amount', 0)
+    
+    # If CGST/SGST or IGST are present, compute total from components
+    combined_tax = cgst + sgst + igst
+    if combined_tax > 0:
+        gst_amount = combined_tax
+    
+    invoice_data['gst_amount'] = gst_amount
+    
+    # --- Step 3: Derive gst_rate from actual amounts (preferred) ---
+    gst_rate = invoice_data.get('gst_rate', 0)
+    
+    # Best source of truth: derive from gst_amount / subtotal
+    if subtotal > 0 and gst_amount > 0:
+        derived_rate = gst_amount / subtotal  # Already in decimal form
+        gst_rate = derived_rate
+    else:
+        # Fallback: use parsed gst_rate, normalize percentage to decimal
+        if gst_rate > 1:
+            gst_rate = gst_rate / 100
+    
+    # Defensive: clamp unrealistic rates (> 50%)
+    if gst_rate > 0.50:
+        print(f"WARNING: Unrealistic GST rate detected ({gst_rate * 100:.1f}%). Defaulting to 18%.")
+        gst_rate = 0.18
+    
+    # Snap to nearest valid GST slab if within 5% tolerance
+    for slab in VALID_GST_SLABS:
+        if slab > 0 and abs(gst_rate - slab) / slab <= 0.05:
+            gst_rate = slab
+            break
+    
+    invoice_data['gst_rate'] = gst_rate
     
     return invoice_data
 
