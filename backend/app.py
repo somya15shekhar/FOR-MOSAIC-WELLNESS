@@ -140,17 +140,19 @@ Required JSON format:
       "total": number
     }}
   ],
-  "subtotal": number,
-  "gst_rate": number,
-  "gst_amount": number,
-  "total_amount": number
+  "subtotal": number (taxable value BEFORE taxes, i.e. sum of line item totals, NOT including GST),
+  "gst_rate": number (percentage value, e.g. 18 for 18%, 5 for 5%, 12 for 12%, 28 for 28%),
+  "gst_amount": number (the actual GST tax amount charged on the invoice),
+  "total_amount": number (final amount including taxes)
 }}
 
 Rules:
 1. Extract the actual values from the invoice text
 2. If a field is not found, use reasonable defaults
 3. Ensure all numbers are valid numeric values
-4. Return ONLY the JSON object, nothing else"""
+4. gst_rate must be a percentage number (e.g. 18, not 0.18)
+5. subtotal must be the taxable base BEFORE any tax is added (sum of line item net amounts)
+6. Return ONLY the JSON object, nothing else"""
 
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -200,10 +202,55 @@ def generate_mock_invoice_data():
             {"description": "Handling", "quantity": 1, "unit_rate": 120, "total": 120}
         ],
         "subtotal": 4700,
-        "gst_rate": 0.18,
+        "gst_rate": 18,
         "gst_amount": 846,
         "total_amount": 5546
     }
+
+def normalize_invoice_data(invoice_data):
+    """Normalize and validate invoice data before auditing.
+    
+    Ensures:
+    - gst_rate is in decimal format (e.g. 0.18, not 18)
+    - subtotal is the taxable base (sum of line items, not including taxes)
+    - Unrealistic GST rates are flagged and corrected
+    """
+    VALID_GST_SLABS = [0, 0.05, 0.12, 0.18, 0.28]
+    
+    # --- Normalize gst_rate to decimal ---
+    gst_rate = invoice_data.get('gst_rate', 18)
+    
+    # If gst_rate looks like a percentage (> 1), convert to decimal
+    if gst_rate > 1:
+        gst_rate = gst_rate / 100
+    
+    # Defensive: flag and clamp unrealistic rates (> 0.50 i.e. 50%)
+    if gst_rate > 0.50:
+        print(f"WARNING: Unrealistic GST rate detected ({gst_rate * 100:.1f}%). Defaulting to 18%.")
+        gst_rate = 0.18
+    
+    # Snap to nearest valid GST slab if within 2% tolerance
+    for slab in VALID_GST_SLABS:
+        if slab > 0 and abs(gst_rate - slab) / slab <= 0.02:
+            gst_rate = slab
+            break
+    
+    invoice_data['gst_rate'] = gst_rate
+    
+    # --- Normalize subtotal ---
+    line_items = invoice_data.get('line_items', [])
+    computed_subtotal = sum(item.get('total', 0) for item in line_items)
+    subtotal = invoice_data.get('subtotal', 0)
+    total_amount = invoice_data.get('total_amount', 0)
+    
+    # If subtotal >= total_amount, it likely includes taxes — recompute from line items
+    if computed_subtotal > 0 and (subtotal >= total_amount or subtotal <= 0):
+        invoice_data['subtotal'] = computed_subtotal
+    # If subtotal doesn't match line items total, prefer line items sum
+    elif computed_subtotal > 0 and abs(subtotal - computed_subtotal) > 1:
+        invoice_data['subtotal'] = computed_subtotal
+    
+    return invoice_data
 
 def get_approved_rate(vendor, service):
     """Get approved rate from rate card"""
@@ -367,7 +414,7 @@ def run_audit(invoice_data):
             issues.append({
                 'rule': 'OVERCHARGE',
                 'severity': 'HIGH',
-                'description': f"{description}: Rate ${unit_rate} exceeds approved ${approved_rate}",
+                'description': f"{description}: Rate \u20b9{unit_rate} exceeds approved \u20b9{approved_rate}",
                 'amount': overage,
                 'line_item': item,
                 'explanation': explanation
@@ -375,14 +422,9 @@ def run_audit(invoice_data):
     
     # Rule 2: GST Validation
     subtotal = invoice_data.get('subtotal', 0)
-    gst_rate = invoice_data.get('gst_rate', 0.18)
-    gst_rate = invoice_data.get('gst_rate', 0.18)
-
-# normalize percentage if parsed as 9 instead of 0.09
-    if gst_rate > 1:
-        gst_rate = gst_rate / 100
-        gst_amount = invoice_data.get('gst_amount', 0)
-        expected_gst = subtotal * gst_rate
+    gst_rate = invoice_data.get('gst_rate', 0.18)  # Should already be normalized to decimal
+    gst_amount = invoice_data.get('gst_amount', 0)
+    expected_gst = subtotal * gst_rate
     
     if expected_gst > 0 and abs(gst_amount - expected_gst) / expected_gst > 0.02:  # 2% variance
         gst_error = gst_amount - expected_gst
@@ -395,7 +437,7 @@ def run_audit(invoice_data):
         issues.append({
             'rule': 'GST_ERROR',
             'severity': 'MEDIUM',
-            'description': f"GST calculation mismatch: Expected ${expected_gst:.2f}, Found ${gst_amount:.2f}",
+            'description': f"GST calculation mismatch: Expected \u20b9{expected_gst:.2f}, Found \u20b9{gst_amount:.2f}",
             'amount': abs(gst_error),
             'explanation': explanation
         })
@@ -576,6 +618,10 @@ def upload_invoice():
     
     # Parse with AI
     invoice_data = parse_invoice_with_ai(extracted_text)
+    
+    # Normalize GST rate and subtotal before auditing
+    invoice_data = normalize_invoice_data(invoice_data)
+    
     invoice_data['file_id'] = file_id
     invoice_data['file_name'] = file.filename
     invoice_data['uploaded_at'] = datetime.now().isoformat()
