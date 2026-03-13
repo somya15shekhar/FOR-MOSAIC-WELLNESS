@@ -137,7 +137,8 @@ Required JSON format:
       "description": string,
       "quantity": number,
       "unit_rate": number,
-      "total": number
+      "total": number,
+      "tax_rate": number (GST rate applied to this line item as a percentage, e.g. 18 or 0 if exempt/non-taxable)
     }}
   ],
   "subtotal": number (taxable value BEFORE taxes, i.e. sum of line item totals, NOT including GST),
@@ -156,7 +157,8 @@ Rules:
 4. gst_rate must be the TOTAL COMBINED GST percentage (e.g. if CGST is 9% and SGST is 9%, gst_rate should be 18)
 5. gst_amount must be the TOTAL tax amount (CGST + SGST, or IGST)
 6. subtotal must be the taxable base BEFORE any tax is added (sum of line item net amounts)
-7. Return ONLY the JSON object, nothing else"""
+7. For each line item, include tax_rate: the GST percentage that applies to that item (0 if the item is non-taxable, e.g. shipping, discount)
+8. Return ONLY the JSON object, nothing else"""
 
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -201,14 +203,14 @@ def generate_mock_invoice_data():
         "invoice_number": "INV-2024-001234",
         "invoice_date": "2024-03-01",
         "line_items": [
-            {"description": "Freight", "quantity": 1, "unit_rate": 4200, "total": 4200},
-            {"description": "Fuel Surcharge", "quantity": 1, "unit_rate": 380, "total": 380},
-            {"description": "Handling", "quantity": 1, "unit_rate": 120, "total": 120}
+            {"description": "Freight", "quantity": 1, "unit_rate": 4200, "total": 4200, "tax_rate": 18},
+            {"description": "Fuel Surcharge", "quantity": 1, "unit_rate": 380, "total": 380, "tax_rate": 18},
+            {"description": "Handling", "quantity": 1, "unit_rate": 120, "total": 120, "tax_rate": 0}
         ],
         "subtotal": 4700,
         "gst_rate": 18,
-        "gst_amount": 846,
-        "total_amount": 5546
+        "gst_amount": 824.40,
+        "total_amount": 5524.40
     }
 
 def normalize_invoice_data(invoice_data):
@@ -216,19 +218,19 @@ def normalize_invoice_data(invoice_data):
     
     Handles:
     - CGST + SGST split taxes (combines into total gst_amount)
+    - Computes taxable_subtotal from only taxed line items (tax_rate > 0)
     - Derives gst_rate from actual amounts when possible
-    - Ensures subtotal is the taxable base (sum of line items)
     - Clamps unrealistic GST rates
     """
     VALID_GST_SLABS = [0, 0.05, 0.12, 0.18, 0.28]
-    
-    # --- Step 1: Normalize subtotal from line items ---
     line_items = invoice_data.get('line_items', [])
+    
+    # --- Step 1: Compute subtotal and taxable_subtotal from line items ---
     computed_subtotal = sum(item.get('total', 0) for item in line_items)
     subtotal = invoice_data.get('subtotal', 0)
     total_amount = invoice_data.get('total_amount', 0)
     
-    # Prefer line items sum: if subtotal >= total_amount, includes taxes; or if mismatch
+    # Prefer line items sum if parsed subtotal looks wrong
     if computed_subtotal > 0 and (subtotal >= total_amount or subtotal <= 0):
         subtotal = computed_subtotal
     elif computed_subtotal > 0 and abs(subtotal - computed_subtotal) > 1:
@@ -236,13 +238,31 @@ def normalize_invoice_data(invoice_data):
     
     invoice_data['subtotal'] = subtotal
     
+    # Compute taxable_subtotal: only line items where tax_rate > 0
+    # If no line item has a tax_rate field, fall back to the full subtotal
+    has_tax_rate_info = any('tax_rate' in item for item in line_items)
+    
+    if has_tax_rate_info:
+        taxable_subtotal = sum(
+            item.get('total', 0) for item in line_items
+            if (item.get('tax_rate') or 0) > 0
+        )
+    else:
+        # No per-item tax info available — use full subtotal as fallback
+        taxable_subtotal = subtotal
+    
+    # Safety: taxable_subtotal should never exceed subtotal
+    if taxable_subtotal > subtotal and subtotal > 0:
+        taxable_subtotal = subtotal
+    
+    invoice_data['taxable_subtotal'] = taxable_subtotal
+    
     # --- Step 2: Combine CGST + SGST / IGST into total gst_amount ---
     cgst = invoice_data.get('cgst_amount') or 0
     sgst = invoice_data.get('sgst_amount') or 0
     igst = invoice_data.get('igst_amount') or 0
     gst_amount = invoice_data.get('gst_amount', 0)
     
-    # If CGST/SGST or IGST are present, compute total from components
     combined_tax = cgst + sgst + igst
     if combined_tax > 0:
         gst_amount = combined_tax
@@ -252,9 +272,9 @@ def normalize_invoice_data(invoice_data):
     # --- Step 3: Derive gst_rate from actual amounts (preferred) ---
     gst_rate = invoice_data.get('gst_rate', 0)
     
-    # Best source of truth: derive from gst_amount / subtotal
-    if subtotal > 0 and gst_amount > 0:
-        derived_rate = gst_amount / subtotal  # Already in decimal form
+    # Best source of truth: derive from gst_amount / taxable_subtotal
+    if taxable_subtotal > 0 and gst_amount > 0:
+        derived_rate = gst_amount / taxable_subtotal
         gst_rate = derived_rate
     else:
         # Fallback: use parsed gst_rate, normalize percentage to decimal
@@ -445,10 +465,11 @@ def run_audit(invoice_data):
             })
     
     # Rule 2: GST Validation
-    subtotal = invoice_data.get('subtotal', 0)
-    gst_rate = invoice_data.get('gst_rate', 0.18)  # Should already be normalized to decimal
+    # Use taxable_subtotal (excludes non-taxable items like shipping)
+    taxable_subtotal = invoice_data.get('taxable_subtotal', invoice_data.get('subtotal', 0))
+    gst_rate = invoice_data.get('gst_rate', 0.18)  # Already normalized to decimal
     gst_amount = invoice_data.get('gst_amount', 0)
-    expected_gst = subtotal * gst_rate
+    expected_gst = taxable_subtotal * gst_rate
     
     if expected_gst > 0 and abs(gst_amount - expected_gst) / expected_gst > 0.02:  # 2% variance
         gst_error = gst_amount - expected_gst
@@ -456,7 +477,7 @@ def run_audit(invoice_data):
             'gst_amount': gst_amount,
             'expected_gst': expected_gst,
             'gst_rate_pct': round(gst_rate * 100),
-            'subtotal': subtotal
+            'subtotal': taxable_subtotal
         })
         issues.append({
             'rule': 'GST_ERROR',
